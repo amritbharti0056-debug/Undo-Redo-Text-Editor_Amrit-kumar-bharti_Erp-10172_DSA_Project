@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Undo/Redo Text Editor | PS No. 17 | DSA Project</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Lato:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1f2a44;--red:#b81c1c;--paper:#f6f7fb;--card:#ffffff;--ink:#1f2a44;--mute:#667089;--line:#d9deea;--green:#2e7d32;--amber:#fff4cf}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--paper:#121828;--card:#1b2338;--ink:#e8ebf5;--mute:#9aa4bd;--line:#2f3a57;--amber:#3b3517;--navy:#c9d3f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 Lato,system-ui,sans-serif}
+header{background:#1f2a44;color:#fff;padding:20px clamp(16px,4vw,48px)}
+header h1{font:700 clamp(24px,4vw,34px)/1.15 Lora,Georgia,serif;margin:0 0 4px}
+header p{margin:0;color:#c9d3f0;font-size:14px}
+main{max-width:1180px;margin:0 auto;padding:20px clamp(16px,3vw,32px) 48px;display:grid;gap:20px;grid-template-columns:320px 1fr}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+h2{font:700 19px Lora,Georgia,serif;margin:0 0 10px;color:var(--red)}
+label{display:block;font-size:14px;color:var(--mute);margin:10px 0 4px}
+input[type=text]{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font:15px 'JetBrains Mono',monospace}
+button{font:700 14px Lato,sans-serif;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 10px;border-radius:6px;cursor:pointer;text-align:left}
+button:hover{border-color:var(--red)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-offset:1px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.menu{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.menu b{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;background:var(--red);color:#fff;margin-right:8px;font-size:13px}
+.menu .exit b{background:#1f2a44}
+.run{background:var(--red);color:#fff;border-color:var(--red);width:100%;text-align:center;margin-top:10px}
+.right{display:grid;gap:20px}
+.list{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:84px;padding-top:22px}
+.node{display:flex;border:2px solid var(--navy);border-radius:6px;font:14px 'JetBrains Mono',monospace;position:relative;background:var(--card)}
+.node .t{padding:8px 10px}.node .n{padding:8px 8px;background:var(--amber);border-left:2px solid var(--navy);color:var(--mute)}
+.node .tag{position:absolute;top:-19px;font:700 12px Lato;color:var(--red)}
+.node .tag.tl{right:0}
+.arrow{color:var(--navy);font-weight:700}
+.null{font:600 13px 'JetBrains Mono',monospace;color:var(--mute)}
+.stacks{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.stack{border:2px solid var(--line);border-radius:8px;min-height:170px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.stack.u{border-color:var(--green)}.stack.r{border-color:var(--navy)}
+.stack h3{margin:0 0 2px;font:700 14px Lato;color:var(--mute)}
+.act{padding:6px 9px;border-radius:5px;font:13px 'JetBrains Mono',monospace;background:var(--paper);border:1px solid var(--line)}
+.act:first-of-type{outline:2px solid var(--red)}
+.empty{color:var(--mute);font-size:13px;font-style:italic}
+.log{background:#10172b;color:#e6e9f4;border-radius:8px;padding:12px;font:14px/1.55 'JetBrains Mono',monospace;height:210px;overflow:auto;white-space:pre-wrap}
+.log .in{color:#f5b942}.log .bad{color:#ff8a8a}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.tests li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.pass{color:var(--green);font-weight:700}.fail{color:var(--red);font-weight:700}
+small{color:var(--mute)}
+@media(prefers-reduced-motion:no-preference){.node.new{animation:pop .25s}@keyframes pop{from{transform:scale(.85);opacity:0}}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Undo/Redo Text Editor</h1>
+  <p>PS No. 17 · Data Structures and Algorithms · Amrit Kumar Bharti (RU-25-10172) · Rungta International Skills University</p>
+</header>
+
+<main>
+  <section aria-labelledby="mh">
+    <h2 id="mh">Menu</h2>
+    <label for="text">Text (used by option 1)</label>
+    <input id="text" type="text" placeholder="Hello World" autocomplete="off">
+    <div class="menu" id="menu">
+      <button data-c="1"><b>1</b>Add line</button>
+      <button data-c="2"><b>2</b>Delete last</button>
+      <button data-c="3"><b>3</b>Undo</button>
+      <button data-c="4"><b>4</b>Redo</button>
+      <button data-c="5"><b>5</b>Display</button>
+      <button data-c="6" class="exit"><b>6</b>Exit and save</button>
+    </div>
+    <label for="choice">Enter choice (try 9 for the invalid case)</label>
+    <input id="choice" type="text" inputmode="numeric" placeholder="1 to 6">
+    <button class="run" id="run">Run choice</button>
+
+    <h2 style="margin-top:20px">document.txt</h2>
+    <div class="row">
+      <button id="dl">Download</button>
+      <button id="up">Load file</button>
+      <button id="clr">Clear all</button>
+    </div>
+    <input type="file" id="file" accept=".txt" hidden>
+    <small>Saved in this browser on Exit, and loaded again when the page opens.</small>
+  </section>
+
+  <div class="right">
+    <section aria-labelledby="dh">
+      <h2 id="dh">Document: linked list of lines</h2>
+      <div class="list" id="list" aria-live="polite"></div>
+      <small id="size"></small>
+    </section>
+
+    <section aria-labelledby="sh">
+      <h2 id="sh">Undo stack and redo stack</h2>
+      <div class="stacks">
+        <div class="stack u"><h3>Undo stack (top first)</h3><div id="us"></div></div>
+        <div class="stack r"><h3>Redo stack (top first)</h3><div id="rs"></div></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="oh">
+      <h2 id="oh">Console output</h2>
+      <div class="log" id="log" role="log" aria-live="polite"></div>
+    </section>
+
+    <section aria-labelledby="th">
+      <h2 id="th">Test cases from the project description</h2>
+      <ul class="tests" id="tests" style="list-style:none;padding:0;margin:0 0 10px"></ul>
+      <button id="runTests">Run all 4 test cases</button>
+    </section>
+  </div>
+</main>
+
+<script>
+/* ---- Data structures (same design as the Java program) ---- */
+class LineNode{constructor(t){this.text=t;this.next=null}}
+class Action{constructor(added,text){this.added=added;this.text=text}}
+class ActionStack{                      // linked LIFO stack
+  constructor(){this.top=null;this.n=0}
+  push(a){this.top={a,next:this.top};this.n++}
+  pop(){const x=this.top.a;this.top=this.top.next;this.n--;return x}
+  isEmpty(){return this.top===null}
+  clear(){this.top=null;this.n=0}
+  items(){const r=[];for(let p=this.top;p;p=p.next)r.push(p.a);return r}
+}
+class Document{
+  constructor(){this.head=null;this.tail=null;this.size=0}
+  addLine(t){const n=new LineNode(t);if(!this.head)this.head=this.tail=n;else{this.tail.next=n;this.tail=n}this.size++}   // O(1)
+  removeLastLine(){                                                                                                    // O(n)
+    if(!this.head)return null;const t=this.tail.text;
+    if(this.head===this.tail){this.head=this.tail=null}
+    else{let p=this.head;while(p.next!==this.tail)p=p.next;p.next=null;this.tail=p}
+    this.size--;return t}
+  isEmpty(){return this.size===0}
+  lines(){const r=[];for(let p=this.head;p;p=p.next)r.push(p.text);return r}
+  render(){return this.lines().map((t,i)=>(i+1)+'. '+t).join(' ')}
+  toFileText(){return this.lines().join('\n')}
+  loadFromText(s){this.head=this.tail=null;this.size=0;s.split(/\r?\n/).filter(l=>l.length).forEach(l=>this.addLine(l))}
+}
+class Editor{
+  constructor(out){this.doc=new Document();this.undoStack=new ActionStack();this.redoStack=new ActionStack();this.out=out}
+  print(s){this.out(s)}
+  addLine(t){this.doc.addLine(t);this.undoStack.push(new Action(true,t));this.redoStack.clear();this.print('Line added.');this.print('Document: '+this.doc.render())}
+  deleteLastLine(){
+    if(this.doc.isEmpty()){this.print('Nothing to delete.');return}
+    const t=this.doc.removeLastLine();this.undoStack.push(new Action(false,t));this.redoStack.clear();this.print('Line deleted.');this.print('Document: '+this.doc.render())}
+  undo(){
+    if(this.undoStack.isEmpty()){this.print('Nothing to undo.');return}
+    const a=this.undoStack.pop();if(a.added)this.doc.removeLastLine();else this.doc.addLine(a.text);
+    this.redoStack.push(a);this.print('Undo done.');this.print('Document: '+this.doc.render())}
+  redo(){
+    if(this.redoStack.isEmpty()){this.print('Nothing to redo.');return}
+    const a=this.redoStack.pop();if(a.added)this.doc.addLine(a.text);else this.doc.removeLastLine();
+    this.undoStack.push(a);this.print('Redo done.');this.print('Document: '+this.doc.render())}
+  display(){this.print(this.doc.isEmpty()?'Document is empty.':'Document: '+this.doc.render())}
+  handle(choice,text){
+    switch(String(choice).trim()){
+      case'1':if(!text.trim()){this.print('Type some text first.');break}this.addLine(text);break;
+      case'2':this.deleteLastLine();break;
+      case'3':this.undo();break;
+      case'4':this.redo();break;
+      case'5':this.display();break;
+      case'6':return true;
+      default:this.print('Invalid option. Choose 1 to 6.')}
+    return false}
+}
+
+/* ---- UI ---- */
+const $=id=>document.getElementById(id), FILE='document.txt';
+const log=(s,c)=>{const d=document.createElement('div');if(c)d.className=c;d.textContent=s;$('log').appendChild(d);$('log').scrollTop=1e9};
+const ed=new Editor(s=>log(s,/^Invalid|^Nothing/.test(s)?'bad':''));
+let lastSize=0;
+
+function save(){try{localStorage.setItem(FILE,ed.doc.toFileText())}catch(e){}}
+function load(){try{const s=localStorage.getItem(FILE);if(s){ed.doc.loadFromText(s);log('Loaded '+ed.doc.size+' line(s) from '+FILE+'.')}}catch(e){}}
+
+function renderStack(el,st){
+  el.innerHTML='';const it=st.items();
+  if(!it.length){el.innerHTML='<div class="empty">empty</div>';return}
+  it.forEach(a=>{const d=document.createElement('div');d.className='act';d.textContent=(a.added?'ADD ':'DEL ')+"'"+a.text+"'";el.appendChild(d)})
+}
+function render(){
+  const L=$('list');L.innerHTML='';const ls=ed.doc.lines();
+  if(!ls.length){L.innerHTML='<span class="empty">head = null. The document is empty. Add a line to create the first node.</span>'}
+  ls.forEach((t,i)=>{
+    const n=document.createElement('div');n.className='node'+(i===ls.length-1&&ls.length>lastSize?' new':'');
+    n.innerHTML='<span class="t"></span><span class="n">next</span>';n.firstChild.textContent=t;
+    if(i===0){const g=document.createElement('span');g.className='tag';g.textContent='head';n.appendChild(g)}
+    if(i===ls.length-1){const g=document.createElement('span');g.className='tag tl';g.textContent='tail';n.appendChild(g)}
+    L.appendChild(n);
+    const a=document.createElement('span');a.className=i<ls.length-1?'arrow':'null';a.textContent=i<ls.length-1?'→':'→ null';L.appendChild(a)});
+  lastSize=ls.length;
+  $('size').textContent='size = '+ed.doc.size;
+  renderStack($('us'),ed.undoStack);renderStack($('rs'),ed.redoStack);
+}
+function run(c){
+  log('Enter choice: '+c,'in');
+  const done=ed.handle(c,$('text').value);
+  if(String(c).trim()==='1'&&$('text').value.trim())$('text').value='';
+  if(done){save();log('Saved to '+FILE+'. Goodbye!')}
+  render()
+}
+$('menu').addEventListener('click',e=>{const b=e.target.closest('button');if(b)run(b.dataset.c)});
+$('run').onclick=()=>{run($('choice').value);$('choice').value=''};
+$('choice').addEventListener('keydown',e=>{if(e.key==='Enter')$('run').click()});
+$('text').addEventListener('keydown',e=>{if(e.key==='Enter')run('1')});
+$('dl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ed.doc.toFileText()],{type:'text/plain'}));a.download=FILE;a.click()};
+$('up').onclick=()=>$('file').click();
+$('file').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(s=>{ed.doc.loadFromText(s);ed.undoStack.clear();ed.redoStack.clear();log('Loaded '+ed.doc.size+' line(s) from '+f.name+'.');render()})};
+$('clr').onclick=()=>{ed.doc.loadFromText('');ed.undoStack.clear();ed.redoStack.clear();try{localStorage.removeItem(FILE)}catch(e){}log('Document and history cleared.');render()};
+
+/* ---- The 4 test cases from the project description ---- */
+const T=[
+ ['1 Normal input','Option 1, text: Hello World',e=>{e.handle('1','Hello World')},['Line added.','Document: 1. Hello World']],
+ ['2 Boundary','Empty document, option 3',e=>{e.handle('3','')},['Nothing to undo.']],
+ ['3 Invalid input','Menu option 9',e=>{e.handle('9','')},['Invalid option. Choose 1 to 6.']],
+ ['4 Valid scenario','Hello World, add, undo, redo',e=>{e.doc.addLine('Hello World');e.handle('1','Python is fun');e.handle('3','');e.handle('4','')},
+   ['Line added.','Document: 1. Hello World 2. Python is fun','Undo done.','Document: 1. Hello World','Redo done.','Document: 1. Hello World 2. Python is fun']]
+];
+function runTests(){
+  const ul=$('tests');ul.innerHTML='';
+  T.forEach(([n,d,f,exp])=>{
+    const got=[];const e=new Editor(s=>got.push(s));f(e);
+    const ok=JSON.stringify(got)===JSON.stringify(exp);
+    const li=document.createElement('li');
+    li.innerHTML='<span></span><span class="'+(ok?'pass':'fail')+'">'+(ok?'PASS':'FAIL')+'</span>';
+    li.firstChild.textContent='Test case '+n+': '+d;ul.appendChild(li)})
+}
+$('runTests').onclick=runTests;
+
+load();render();runTests();
+log('Menu: 1 Add line, 2 Delete last line, 3 Undo, 4 Redo, 5 Display, 6 Exit');
+</script>
+</body>
+</html>

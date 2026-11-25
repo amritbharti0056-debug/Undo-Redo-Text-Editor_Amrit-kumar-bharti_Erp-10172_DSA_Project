@@ -8,7 +8,7 @@ Features
 
 - Insert text
 - Undo operation
-- Redo operation
+- Redo operation 
 - View document
 - Save text into a file
 - Load previously saved text
